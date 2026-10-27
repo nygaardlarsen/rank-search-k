@@ -1,0 +1,8 @@
+benchmarks/datasets/
+cub-baseline/test-cub
+cub-baseline/test-batch
+__pycache__/
+*.pyc
+*.o
+*.out
+*.exe

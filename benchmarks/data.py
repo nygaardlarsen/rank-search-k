@@ -1,0 +1,132 @@
+
+import argparse
+from pathlib import Path
+import numpy as np
+import json
+
+def generate_data(num_segments, segment_size, irregular=False, k_mode="random", value_mode="full", seed=42):
+    rng = np.random.default_rng(seed)
+
+    if num_segments < 1 or segment_size < 1:
+        raise ValueError("num_segments and segment_size must be positive")
+
+    if num_segments > np.iinfo(np.int32).max or segment_size > np.iinfo(np.int32).max:
+        raise ValueError("Input exceeds int32 limits")
+
+    if irregular and segment_size * 19 // 10 > np.iinfo(np.int32).max:
+        raise ValueError("Irregular segment size exceeds int32 limits")
+        
+    if irregular:
+        # sizes from 0.1 to 1.9 times og segment size
+        # still in expectation 1, so comparable with regular sizes
+        sizes = rng.integers(max(1, segment_size // 10), segment_size * 19 // 10 + 1, size=num_segments)
+    else:
+        # same sizes
+        sizes = np.full(num_segments, segment_size, dtype=np.int64)
+
+    offsets = np.concatenate(([0], np.cumsum(sizes, dtype=np.int64)))
+    if offsets[-1] > np.iinfo(np.int32).max:
+        raise ValueError("Too many elements for int32 offsets")
+
+    
+    N = int(offsets[-1])
+    values = np.empty(N, dtype=np.uint32)
+
+    if value_mode not in ("full", "segment", "segment10", "small"):
+        raise ValueError("Unknown value_mode")
+
+    for i, size in enumerate(sizes):
+        # all possible 32 bit integers
+        # few duplicates in expectation, unless very large size
+        if value_mode == "full":
+            value_max = 2**32
+        # max = number of values in segment
+        elif value_mode == "segment":
+            value_max = int(size)
+        # max =  number of values in segment / 10
+        # should produce duplicates, which changes how the algorithms might behave
+        elif value_mode == "segment10":
+            value_max = max(1, int(size) // 10)
+        # max = 100
+        # tons of duplicates
+        else:
+            value_max = 100
+
+        values[offsets[i]:offsets[i + 1]] = rng.integers(0, value_max, size=int(size), dtype=np.uint32)
+
+    # different ways to select k
+    # to investigate hoow the algorithms behave
+    if k_mode == "min":
+        ks = np.ones(num_segments, dtype=np.int32)
+    elif k_mode == "max":
+        ks = sizes.astype(np.int32)
+    elif k_mode == "median":
+        ks = ((sizes + 1) // 2).astype(np.int32)
+    elif k_mode == "random":
+        ks = rng.integers(1, sizes + 1).astype(np.int32)
+    else:
+        raise ValueError("Unknown k_mode")
+
+
+    assert len(values) == offsets[-1]
+    assert len(ks) == num_segments
+    assert np.all(ks >= 1)
+    assert np.all(ks <= sizes)
+    assert np.all(np.diff(offsets) == sizes)
+
+    return values, offsets.astype(np.int32), ks
+
+def save_data(values, offsets, ks, path):
+    path = Path(path)
+    path.mkdir(parents=True, exist_ok=True)
+
+    values.astype("<u4").tofile(path / "values.bin")
+    offsets.astype("<i4").tofile(path / "offsets.bin")
+    ks.astype("<i4").tofile(path / "ks.bin")
+
+    def write_array(f, array, dtype):
+        f.write("[")
+        for start in range(0, len(array), 10000):
+            chunk = array[start:start + 10000]
+            if start:
+                f.write(", ")
+            f.write(", ".join(f"{int(x)}{dtype}" for x in chunk))
+        f.write("]\n")
+
+    with (path / "input.in").open("w") as f:
+        write_array(f, ks, "i32")
+        write_array(f, np.diff(offsets), "i32")
+        write_array(f, values, "u32")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--segments", type=int, required=True)
+    parser.add_argument("--size", type=int, required=True)
+    parser.add_argument("--distribution", choices=["regular", "irregular"], default="regular")
+    parser.add_argument("--k-mode", choices=["min", "max", "median", "random"], default="random")
+    parser.add_argument("--value-mode", choices=["full", "segment", "segment10", "small"], default="full")
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--output", required=True)
+    args = parser.parse_args()
+
+    if args.segments < 1 or args.size < 1:
+        parser.error("segments and size must be positive")
+
+    values, offsets, ks = generate_data(args.segments, args.size, args.distribution == "irregular", args.k_mode, args.value_mode, args.seed)
+    save_data(values, offsets, ks, args.output)
+
+
+    metadata = {
+        "num_segments": args.segments,
+        "segment_size": args.size,
+        "total_elements": len(values),
+        "distribution": args.distribution,
+        "k_mode": args.k_mode,
+        "value_mode": args.value_mode,
+        "seed": args.seed
+    }
+
+    with (Path(args.output) / "metadata.json").open("w") as f:
+        json.dump(metadata, f, indent=2)
+        
+    print(f"Saved {len(values)} elements in {len(ks)} segments to {args.output}")
