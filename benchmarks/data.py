@@ -4,25 +4,25 @@ from pathlib import Path
 import numpy as np
 import json
 
-def generate_data(num_segments, segment_size, irregular=False, k_mode="random", value_mode="full", seed=42):
+def generate_data(m, n, irregular=False, k_mode="random", value_mode="full", seed=42):
     rng = np.random.default_rng(seed)
 
-    if num_segments < 1 or segment_size < 1:
-        raise ValueError("num_segments and segment_size must be positive")
+    if m < 1 or n < 1:
+        raise ValueError("m and n must be positive")
 
-    if num_segments > np.iinfo(np.int32).max or segment_size > np.iinfo(np.int32).max:
+    if m > np.iinfo(np.int32).max or n > np.iinfo(np.int32).max:
         raise ValueError("Input exceeds int32 limits")
 
-    if irregular and segment_size * 19 // 10 > np.iinfo(np.int32).max:
+    if irregular and n * 19 // 10 > np.iinfo(np.int32).max:
         raise ValueError("Irregular segment size exceeds int32 limits")
         
     if irregular:
         # sizes from 0.1 to 1.9 times og segment size
         # still in expectation 1, so comparable with regular sizes
-        sizes = rng.integers(max(1, segment_size // 10), segment_size * 19 // 10 + 1, size=num_segments)
+        sizes = rng.integers(max(1, n // 10), n * 19 // 10 + 1, size=m)
     else:
         # same sizes
-        sizes = np.full(num_segments, segment_size, dtype=np.int64)
+        sizes = np.full(m, n, dtype=np.int64)
 
     offsets = np.concatenate(([0], np.cumsum(sizes, dtype=np.int64)))
     if offsets[-1] > np.iinfo(np.int32).max:
@@ -57,7 +57,7 @@ def generate_data(num_segments, segment_size, irregular=False, k_mode="random", 
     # different ways to select k
     # to investigate hoow the algorithms behave
     if k_mode == "min":
-        ks = np.ones(num_segments, dtype=np.int32)
+        ks = np.ones(m, dtype=np.int32)
     elif k_mode == "max":
         ks = sizes.astype(np.int32)
     elif k_mode == "median":
@@ -69,7 +69,7 @@ def generate_data(num_segments, segment_size, irregular=False, k_mode="random", 
 
 
     assert len(values) == offsets[-1]
-    assert len(ks) == num_segments
+    assert len(ks) == m
     assert np.all(ks >= 1)
     assert np.all(ks <= sizes)
     assert np.all(np.diff(offsets) == sizes)
@@ -100,8 +100,8 @@ def save_data(values, offsets, ks, path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--segments", type=int, required=True)
-    parser.add_argument("--size", type=int, required=True)
+    parser.add_argument("--m", type=int, required=True)
+    parser.add_argument("--n", type=int, required=True)
     parser.add_argument("--distribution", choices=["regular", "irregular"], default="regular")
     parser.add_argument("--k-mode", choices=["min", "max", "median", "random"], default="random")
     parser.add_argument("--value-mode", choices=["full", "segment", "segment10", "small"], default="full")
@@ -109,16 +109,16 @@ if __name__ == "__main__":
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
 
-    if args.segments < 1 or args.size < 1:
+    if args.m < 1 or args.n < 1:
         parser.error("segments and size must be positive")
 
-    values, offsets, ks = generate_data(args.segments, args.size, args.distribution == "irregular", args.k_mode, args.value_mode, args.seed)
+    values, offsets, ks = generate_data(args.m, args.n, args.distribution == "irregular", args.k_mode, args.value_mode, args.seed)
     save_data(values, offsets, ks, args.output)
 
 
     metadata = {
-        "num_segments": args.segments,
-        "segment_size": args.size,
+        "m": args.m,
+        "n": args.n,
         "total_elements": len(values),
         "distribution": args.distribution,
         "k_mode": args.k_mode,
