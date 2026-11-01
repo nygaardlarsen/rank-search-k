@@ -76,6 +76,15 @@ def generate_data(m, n, irregular=False, k_mode="random", value_mode="full", see
 
     return values, offsets.astype(np.int32), ks
 
+
+def save_futhark_binary(values, offsets, ks, path):
+    import futhark_data  # pip install futhark-data; only needed for --futhark
+
+    with Path(path).open("wb") as f:
+        futhark_data.dump(ks.astype(np.int32), f, binary=True)
+        futhark_data.dump(np.diff(offsets).astype(np.int32), f, binary=True)
+        futhark_data.dump(values.astype(np.uint32), f, binary=True)
+
 def save_data(values, offsets, ks, path):
     path = Path(path)
     path.mkdir(parents=True, exist_ok=True)
@@ -106,13 +115,26 @@ if __name__ == "__main__":
     parser.add_argument("--k-mode", choices=["min", "max", "median", "random"], default="random")
     parser.add_argument("--value-mode", choices=["full", "segment", "segment10", "small"], default="full")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--output", required=True)
+    parser.add_argument("--futhark", action="store_true", default=False,
+                        help="only write a Futhark binary .in file to benchmarks/datasets/")
+    parser.add_argument("--output")
     args = parser.parse_args()
 
     if args.m < 1 or args.n < 1:
         parser.error("segments and size must be positive")
+    if not args.futhark and args.output is None:
+        parser.error("the following arguments are required: --output")
 
     values, offsets, ks = generate_data(args.m, args.n, args.distribution == "irregular", args.k_mode, args.value_mode, args.seed)
+
+    if args.futhark:
+        name = f"m{args.m}-n{args.n}-{args.distribution}-{args.k_mode}-{args.value_mode}-s{args.seed}"
+        output = Path(__file__).resolve().parent / "datasets" / f"{name}.in"
+        output.parent.mkdir(parents=True, exist_ok=True)
+        save_futhark_binary(values, offsets, ks, output)
+        print(f"Saved {len(values)} elements in {len(ks)} segments to {output}")
+        raise SystemExit
+
     save_data(values, offsets, ks, args.output)
 
 
