@@ -7,3 +7,4 @@ __pycache__/
 *.out
 *.exe
 results/
+!benchmarks/futhark-data/*.out

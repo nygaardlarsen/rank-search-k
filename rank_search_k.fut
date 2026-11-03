@@ -1,7 +1,6 @@
 -- Inputs match benchmarks/data.py: one-based ranks, segment lengths, values.
--- Generate the dataset first:
---   python3 benchmarks/data.py --m 1024 --n 4096 --distribution irregular \
---     --k-mode random --value-mode small --seed 42 --futhark
+-- Generate the datasets and expected outputs below first:
+--   python3 benchmarks/data.py --futhark-all
 -- ==
 -- nobench input { [1i32] [1i32] [42u32] }
 -- output { [42u32] }
@@ -20,7 +19,30 @@
 -- nobench input { [1i32, 2i32] [3i32, 3i32]
 --                 [4294967295u32, 0u32, 2147483648u32, 0u32, 4294967295u32, 2147483648u32] }
 -- output { [0u32, 2147483648u32] }
--- compiled input @ benchmarks/datasets/m1024-n4096-irregular-random-small-s42.in
+-- compiled input @ benchmarks/futhark-data/m1-n256-regular-random-full-s42.in
+-- output @ benchmarks/futhark-data/m1-n256-regular-random-full-s42.out
+-- compiled input @ benchmarks/futhark-data/m1-n256-irregular-random-full-s42.in
+-- output @ benchmarks/futhark-data/m1-n256-irregular-random-full-s42.out
+-- compiled input @ benchmarks/futhark-data/m1-n4096-regular-random-full-s42.in
+-- output @ benchmarks/futhark-data/m1-n4096-regular-random-full-s42.out
+-- compiled input @ benchmarks/futhark-data/m1-n4096-irregular-random-full-s42.in
+-- output @ benchmarks/futhark-data/m1-n4096-irregular-random-full-s42.out
+-- compiled input @ benchmarks/futhark-data/m1-n16384-regular-random-full-s42.in
+-- output @ benchmarks/futhark-data/m1-n16384-regular-random-full-s42.out
+-- compiled input @ benchmarks/futhark-data/m1-n16384-irregular-random-full-s42.in
+-- output @ benchmarks/futhark-data/m1-n16384-irregular-random-full-s42.out
+-- compiled input @ benchmarks/futhark-data/m64-n256-regular-random-full-s42.in
+-- output @ benchmarks/futhark-data/m64-n256-regular-random-full-s42.out
+-- compiled input @ benchmarks/futhark-data/m64-n256-irregular-random-full-s42.in
+-- output @ benchmarks/futhark-data/m64-n256-irregular-random-full-s42.out
+-- compiled input @ benchmarks/futhark-data/m64-n4096-regular-random-full-s42.in
+-- output @ benchmarks/futhark-data/m64-n4096-regular-random-full-s42.out
+-- compiled input @ benchmarks/futhark-data/m64-n4096-irregular-random-full-s42.in
+-- output @ benchmarks/futhark-data/m64-n4096-irregular-random-full-s42.out
+-- compiled input @ benchmarks/futhark-data/m1024-n256-regular-random-full-s42.in
+-- output @ benchmarks/futhark-data/m1024-n256-regular-random-full-s42.out
+-- compiled input @ benchmarks/futhark-data/m1024-n256-irregular-random-full-s42.in
+-- output @ benchmarks/futhark-data/m1024-n256-irregular-random-full-s42.out
 
 -- Pivot rules. Solved segments have length zero and must not read a pivot.
 
