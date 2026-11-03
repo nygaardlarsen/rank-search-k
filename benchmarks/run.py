@@ -1,7 +1,8 @@
-"""Run on a GPU node: python3 benchmarks/run.py --m 1 64 1024 --n 256 4096"""
+"""Run on a GPU node from the repo root: python3 benchmarks/run.py --m 1 64 1024 --n 256 4096 [--print]"""
 
 import argparse
 import csv
+import os
 from itertools import product
 from pathlib import Path
 import re
@@ -12,7 +13,7 @@ import numpy as np
 from data import generate_data, save_data
 
 
-VARIANTS = ["rank_search.fut", "rank_search_v2.fut"]
+VARIANTS = ["rank_search_k.fut"]
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -25,7 +26,9 @@ def main():
     parser.add_argument("--value-mode", nargs="+", choices=["full", "segment", "segment10", "small"],
                         default=["full", "small"])
     parser.add_argument("--seeds", type=int, nargs="+", default=[42])
-    parser.add_argument("--output", type=Path, default=Path("benchmarks/results.csv"))
+    parser.add_argument("--output", type=Path, default=Path("results/results.csv"))
+    parser.add_argument("--print", action="store_true",
+                        help="only print timings and validation to stdout; write no CSV files")
     args = parser.parse_args()
     if min(args.m + args.n) < 1:
         parser.error("m and n must be positive")
@@ -44,13 +47,14 @@ def main():
         executables[variant] = executable
 
     output = root / args.output
-    output.parent.mkdir(parents=True, exist_ok=True)
+    if not args.print:
+        output.parent.mkdir(parents=True, exist_ok=True)
     fields = ["variant", "m", "n", "total_elements", "distribution", "k_mode", "value_mode", "seed",
           "cub_us", "futhark_us", "speedup"]
     # Append so later experiment runs keep earlier measurements.
-    with output.open("a", newline="") as csv_file:
+    with (open(os.devnull, "w") if args.print else output.open("a", newline="")) as csv_file:
         writer = csv.DictWriter(csv_file, fieldnames=fields)
-        if csv_file.tell() == 0:
+        if not args.print and csv_file.tell() == 0:
             writer.writeheader()
         for m, n, distribution, k_mode, value_mode, seed in product(
                 args.m, args.n, args.distribution, args.k_mode, args.value_mode, args.seeds):
@@ -93,8 +97,11 @@ def main():
                 writer.writerow(result)
 
                 csv_file.flush()
+                # Reaching this line means CUB and Futhark both matched the NumPy reference.
                 print(f"{name} | {variant}: CUB={cub_us:.2f} us, Futhark={futhark_us:.2f} us, "
-                        f"speedup={speedup:.3f}x", flush=True)
+                        f"speedup={speedup:.3f}x, VALIDATED", flush=True)
+    if args.print:
+        return
     print(f"Results: {output}")
     create_summary(output)
 
