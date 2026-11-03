@@ -1,4 +1,4 @@
-# Rank-k search on GPU
+# Overview
 
 - `rank_search_k.fut` – Futhark implementation 
 - `cub-baseline/` – CUB segmented radix sort + select implementation 
