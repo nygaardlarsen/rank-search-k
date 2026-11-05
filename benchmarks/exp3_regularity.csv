@@ -1,0 +1,11 @@
+variant,m,n,total_elements,distribution,k_mode,value_mode,seed,cub_us,futhark_us,speedup
+rank_search_k.fut,1024,4096,4194304,regular,median,full,42,406.56,3162.5675,0.12855377790355463
+rank_search_k.fut,1024,4096,4194304,regular,median,full,43,278.68,3196.25,0.08718967540086038
+rank_search_k.fut,1024,4096,4194304,regular,median,full,44,278.38,3030.2425,0.0918672350480201
+rank_search_k.fut,1024,4096,4194304,regular,median,full,45,278.11,3147.975,0.08834568254195158
+rank_search_k.fut,1024,4096,4194304,regular,median,full,46,279.19,3146.63,0.0887266694844961
+rank_search_k.fut,1024,4096,4194304,irregular,median,full,42,336.45,3318.2875,0.10139266112414913
+rank_search_k.fut,1024,4096,4194304,irregular,median,full,43,322.11,3137.4,0.10266781411359725
+rank_search_k.fut,1024,4096,4194304,irregular,median,full,44,326.61,3168.6475,0.10307552354750726
+rank_search_k.fut,1024,4096,4194304,irregular,median,full,45,331.79,3391.0225,0.09784364450545521
+rank_search_k.fut,1024,4096,4194304,irregular,median,full,46,324.99,3168.9475,0.10255455478514554

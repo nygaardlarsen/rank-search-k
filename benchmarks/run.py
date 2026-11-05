@@ -64,6 +64,7 @@ def main():
                 m, n, distribution == "irregular", k_mode, value_mode, seed)
             save_data(values, offsets, ks, case)
 
+            subprocess.run([str(root / "cub-baseline/test-batch"), str(case)], check=True, stdout=subprocess.DEVNULL)
             cub = subprocess.run([str(root / "cub-baseline/test-batch"), str(case)],
                                  check=True, stdout=subprocess.PIPE, text=True)
             match = re.search(r"Sorting \+ selection time: ([0-9.]+) us, VALID: 1\b", cub.stdout)

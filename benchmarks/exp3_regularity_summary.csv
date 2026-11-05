@@ -1,0 +1,3 @@
+variant,m,n,distribution,k_mode,value_mode,seeds,cub_us_mean,futhark_us_mean,futhark_us_std,speedup_mean,speedup_std
+rank_search_k.fut,1024,4096,irregular,median,full,5,328.39,3236.861,111.30347992089008,0.10150683961517085,0.002141166345862587
+rank_search_k.fut,1024,4096,regular,median,full,5,304.184,3136.733,62.797799409095575,0.09693660807577652,0.017759179039181238

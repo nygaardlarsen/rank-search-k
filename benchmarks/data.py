@@ -17,13 +17,16 @@ def generate_data(m, n, irregular=False, k_mode="random", value_mode="full", see
     if irregular and n * 19 // 10 > np.iinfo(np.int32).max:
         raise ValueError("Irregular segment size exceeds int32 limits")
         
-    if irregular:
-        # sizes from 0.1 to 1.9 times og segment size
-        # still in expectation 1, so comparable with regular sizes
-        sizes = rng.integers(max(1, n // 10), n * 19 // 10 + 1, size=m)
-    else:
-        # same sizes
-        sizes = np.full(m, n, dtype=np.int64)
+    sizes = np.full(m, n, dtype=np.int64)
+
+    if irregular and m > 1:
+        low = max(1, n // 10)
+        high = 2 * n - low
+        pairs = m // 2
+        small = rng.integers(low, n + 1, size=pairs)
+        sizes[:2 * pairs:2] = small
+        sizes[1:2 * pairs:2] = 2 * n - small
+        rng.shuffle(sizes)
 
     offsets = np.concatenate(([0], np.cumsum(sizes, dtype=np.int64)))
     if offsets[-1] > np.iinfo(np.int32).max:
